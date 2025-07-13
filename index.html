@@ -8,6 +8,7 @@
     :root {
       --green: #27ae60;
       --red: #c0392b;
+      --orange: #f39c12;
       --background: #f4f4f4;
       --white: #fff;
     }
@@ -24,9 +25,8 @@
 
     h1 {
       color: #333;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
       font-size: 2rem;
-      text-align: center;
     }
 
     table {
@@ -51,19 +51,9 @@
       color: #555;
     }
 
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    .verfuegbar {
-      color: var(--green);
-      font-weight: bold;
-    }
-
-    .ausgeliehen {
-      color: var(--red);
-      font-weight: bold;
-    }
+    .verfuegbar { color: var(--green); font-weight: bold; }
+    .ausgeliehen { color: var(--red); font-weight: bold; }
+    .reserviert { color: var(--orange); font-weight: bold; }
 
     .footer {
       margin-top: 2rem;
@@ -75,7 +65,7 @@
 <body>
 
   <h1>🚴 MTB Fahrradstatus – Live</h1>
-  <p>Bitte trotzdem den Kalender checken:</p>
+  <p>Bitte trotzdem den Kalender prüfen!</p>
 
   <table id="status-table">
     <tr>
@@ -84,34 +74,48 @@
     </tr>
   </table>
 
-  <div class="footer">Daten werden automatisch aus Google Sheets geladen.</div>
+  <div class="footer">Daten aus Google Sheets + Kalender</div>
 
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Wgvd19Nb_gMb5i8ItkPQyTiHE7oORn97JHw_-Edwo1mDDcxzx6rauC5_gtwi0rOzZ3YGFjwKJUFG/pub?gid=0&single=true&output=csv";
+    const kalenderUrl = "https://script.google.com/macros/s/AKfycbwyLloMbYZYxLxTNk-MLT9dfhfIUJTZLYlEJpMFhIbEEIqqNEBUGh2fYyWY8nohXwu0fA/exec"; // <- hier deine Script-ID einfügen
 
-    fetch(csvUrl)
-      .then(res => res.text())
-      .then(csv => {
-        const rows = csv.trim().split("\n").slice(1); // Entfernt Header
-        const table = document.getElementById("status-table");
+    let reservierungen = {};
 
-        rows.forEach(row => {
-          const [radnummer, status] = row.split(",");
-          const tr = document.createElement("tr");
-          const cleanStatus = status.trim();
-          const cssClass = cleanStatus.includes("Verfügbar") ? "verfuegbar" : "ausgeliehen";
-
-          tr.innerHTML = `
-            <td>${radnummer}</td>
-            <td class="${cssClass}">${cleanStatus}</td>
-          `;
-          table.appendChild(tr);
-        });
+    // Lade Reservierungen aus Kalender
+    fetch(kalenderUrl)
+      .then(res => res.json())
+      .then(data => {
+        reservierungen = data;
       })
-      .catch(err => {
-        console.error("Fehler beim Laden der CSV:", err);
-        const table = document.getElementById("status-table");
-        table.insertAdjacentHTML("afterend", "<p style='color:red;'>Fehler beim Laden der Daten.</p>");
+      .catch(err => console.warn("⚠️ Fehler beim Laden der Reservierungen:", err))
+      .finally(() => {
+        // Lade danach CSV
+        fetch(csvUrl)
+          .then(res => res.text())
+          .then(csv => {
+            const rows = csv.trim().split("\n").slice(1);
+            const table = document.getElementById("status-table");
+
+            rows.forEach(row => {
+              const [radnummer, status] = row.split(",");
+              const cleanStatus = status.trim();
+              let cssClass = cleanStatus.includes("Verfügbar") ? "verfuegbar" : "ausgeliehen";
+              let statusText = cleanStatus;
+
+              if (reservierungen[radnummer]) {
+                cssClass = "reserviert";
+                statusText = `📅 Reserviert von ${reservierungen[radnummer]}`;
+              }
+
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td>${radnummer}</td>
+                <td class="${cssClass}">${statusText}</td>
+              `;
+              table.appendChild(tr);
+            });
+          });
       });
   </script>
 </body>
