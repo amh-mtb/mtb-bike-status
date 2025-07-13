@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel – MTB</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 400px;
+      margin: auto;
+    }
+    input, select, button {
+      display: block;
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    .message {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔧 Admin: Fahrradstatus setzen</h1>
+  <form id="admin-form">
+    <label>Radnummer:
+      <input type="text" name="radnummer" required>
+    </label>
+
+    <label>Status:
+      <select name="override">
+        <option value="">🔄 Automatisch (Standard)</option>
+        <option value="In Reparatur">🔧 In Reparatur</option>
+      </select>
+    </label>
+
+    <button type="submit">✅ Anwenden</button>
+    <div class="message" id="message"></div>
+  </form>
+
+  <script>
+    const form = document.getElementById("admin-form");
+    const message = document.getElementById("message");
+    const endpoint = "DEINE_APPS_SCRIPT_URL"; // ⬅️ HIER deine Web-App-URL einfügen
+    const token = "GEHEIM123"; // ⬅️ gleich wie im Script oben
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form));
+      data.token = token;
+
+      message.textContent = "⏳ Wird gesendet...";
+
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const text = await res.text();
+        if (text === "OK") {
+          message.textContent = "✅ Erfolgreich aktualisiert";
+        } else if (text === "NICHT GEFUNDEN") {
+          message.textContent = "❌ Radnummer nicht gefunden";
+        } else {
+          message.textContent = "⚠️ Fehler: " + text;
+        }
+      } catch (err) {
+        console.error(err);
+        message.textContent = "❌ Netzwerkfehler";
+      }
+    });
+  </script>
+</body>
+</html>
