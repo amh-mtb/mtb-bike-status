@@ -101,11 +101,10 @@
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Wgvd19Nb_gMb5i8ItkPQyTiHE7oORn97JHw_-Edwo1mDDcxzx6rauC5_gtwi0rOzZ3YGFjwKJUFG/pub?gid=0&single=true&output=csv";
     const scriptEndpoint = "https://script.google.com/macros/s/AKfycbzw0IDiIBylqAoWrxH2EG3C52pDhCxumJx3eoe2PiKEXmgJ0VPdZ3brdpTMXaMr4FAjyw/exec";
-    const adminPassword = "Fahrrad1"; // ⬅️ Passwort hier setzen
+    const adminPassword = "Fahrrad1";
 
     let enteredPassword = "";
 
-    // Passwortabfrage
     while (enteredPassword !== adminPassword) {
       enteredPassword = prompt("🔐 Admin Passwort eingeben:");
       if (enteredPassword === null) {
@@ -117,10 +116,10 @@
     fetch(csvUrl)
       .then(res => res.text())
       .then(csv => {
-        const rows = csv.trim().split("\n").slice(1); // Header entfernen
+        const rows = csv.trim().split("\n").slice(1);
         const table = document.getElementById("status-table");
 
-        rows.forEach((row, index) => {
+        rows.forEach(row => {
           const [radnummer, status] = row.split(",");
           const cleanStatus = status.trim();
           const cssClass = cleanStatus.includes("Verfügbar")
@@ -143,23 +142,13 @@
           table.appendChild(tr);
         });
 
-        // Event Listener für alle Buttons
         document.querySelectorAll(".toggle-btn").forEach(button => {
           button.addEventListener("click", () => {
             const radnummer = button.dataset.rad;
-            const toggleTo = button.dataset.status === "on" ? "In Reparatur" : "";
+            const override = button.dataset.status === "on" ? "In Reparatur" : "";
+            const url = `${scriptEndpoint}?radnummer=${encodeURIComponent(radnummer)}&override=${encodeURIComponent(override)}&password=${encodeURIComponent(adminPassword)}`;
 
-            const payload = {
-              radnummer: radnummer,
-              override: toggleTo,
-              password: adminPassword
-            };
-
-            fetch(scriptEndpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            })
+            fetch(url)
               .then(res => res.text())
               .then(text => {
                 if (text === "OK") {
