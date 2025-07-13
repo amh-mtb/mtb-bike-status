@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MTB Fahrradstatus</title>
+  <style>
+    :root {
+      --green: #27ae60;
+      --red: #c0392b;
+      --background: #f4f4f4;
+      --white: #fff;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--background);
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 2rem;
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      max-width: 500px;
+      border-collapse: collapse;
+      background: var(--white);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 16px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      font-size: 1.1rem;
+    }
+
+    th {
+      background-color: #fafafa;
+      color: #555;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .verfuegbar {
+      color: var(--green);
+      font-weight: bold;
+    }
+
+    .ausgeliehen {
+      color: var(--red);
+      font-weight: bold;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🚴 MTB Fahrradstatus – Live</h1>
+  <p>Bitte trotzdem den Kalender checken:</p>
+
+  <table id="status-table">
+    <tr>
+      <th>Radnummer</th>
+      <th>Status</th>
+    </tr>
+  </table>
+
+  <div class="footer">Daten werden automatisch aus Google Sheets geladen.</div>
+
+  <script>
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Wgvd19Nb_gMb5i8ItkPQyTiHE7oORn97JHw_-Edwo1mDDcxzx6rauC5_gtwi0rOzZ3YGFjwKJUFG/pub?gid=0&single=true&output=csv";
+
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split("\n").slice(1); // Entfernt Header
+        const table = document.getElementById("status-table");
+
+        rows.forEach(row => {
+          const [radnummer, status] = row.split(",");
+          const tr = document.createElement("tr");
+          const cleanStatus = status.trim();
+          const cssClass = cleanStatus.includes("Verfügbar") ? "verfuegbar" : "ausgeliehen";
+
+          tr.innerHTML = `
+            <td>${radnummer}</td>
+            <td class="${cssClass}">${cleanStatus}</td>
+          `;
+          table.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        console.error("Fehler beim Laden der CSV:", err);
+        const table = document.getElementById("status-table");
+        table.insertAdjacentHTML("afterend", "<p style='color:red;'>Fehler beim Laden der Daten.</p>");
+      });
+  </script>
+</body>
+</html>
