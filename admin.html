@@ -1,84 +1,183 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Panel – MTB</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MTB Admin Panel</title>
   <style>
+    :root {
+      --green: #27ae60;
+      --red: #c0392b;
+      --background: #f4f4f4;
+      --white: #fff;
+      --blue: #2980b9;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--background);
+      margin: 0;
       padding: 2rem;
-      max-width: 400px;
-      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    input, select, button {
-      display: block;
-      margin-top: 1rem;
+
+    h1 {
+      color: #333;
+      margin-bottom: 2rem;
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    table {
       width: 100%;
-      padding: 0.5rem;
-      font-size: 1rem;
+      max-width: 700px;
+      border-collapse: collapse;
+      background: var(--white);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
     }
-    .message {
-      margin-top: 1rem;
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      font-size: 1.05rem;
+    }
+
+    th {
+      background-color: #fafafa;
+      color: #555;
+    }
+
+    .verfuegbar {
+      color: var(--green);
       font-weight: bold;
+    }
+
+    .ausgeliehen {
+      color: var(--red);
+      font-weight: bold;
+    }
+
+    .reparatur {
+      color: var(--blue);
+      font-weight: bold;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: #888;
+    }
+
+    button.toggle-btn {
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background-color: var(--blue);
+      color: white;
     }
   </style>
 </head>
 <body>
-  <h1>🔧 Fahrradstatus ändern</h1>
-  <form id="admin-form">
-    <label>Radnummer:
-      <input type="text" name="radnummer" required>
-    </label>
 
-    <label>Status:
-      <select name="override">
-        <option value="">🔄 Automatisch (Standard)</option>
-        <option value="In Reparatur">🔧 In Reparatur</option>
-      </select>
-    </label>
+  <h1>🔧 MTB Admin – Fahrradstatus</h1>
 
-    <label>🔑 Passwort:
-      <input type="password" name="password" required>
-    </label>
+  <table id="status-table">
+    <tr>
+      <th>Radnummer</th>
+      <th>Status</th>
+      <th>Aktion</th>
+    </tr>
+  </table>
 
-    <button type="submit">✅ Anwenden</button>
-    <div class="message" id="message"></div>
-  </form>
+  <div class="footer">Nur für Admins – Reparaturstatus wird direkt gesetzt</div>
 
   <script>
-    const form = document.getElementById("admin-form");
-    const message = document.getElementById("message");
-    const endpoint = "https://script.google.com/macros/s/AKfycbzw0IDiIBylqAoWrxH2EG3C52pDhCxumJx3eoe2PiKEXmgJ0VPdZ3brdpTMXaMr4FAjyw/exec"; // ⬅️ HIER deine URL einsetzen
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Wgvd19Nb_gMb5i8ItkPQyTiHE7oORn97JHw_-Edwo1mDDcxzx6rauC5_gtwi0rOzZ3YGFjwKJUFG/pub?gid=0&single=true&output=csv";
+    const scriptEndpoint = "https://script.google.com/macros/s/AKfycbzw0IDiIBylqAoWrxH2EG3C52pDhCxumJx3eoe2PiKEXmgJ0VPdZ3brdpTMXaMr4FAjyw/exec";
+    const adminPassword = "Fahrrad1"; // ⬅️ Passwort hier setzen
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(form));
+    let enteredPassword = "";
 
-      message.textContent = "⏳ Wird gesendet...";
+    // Passwortabfrage
+    while (enteredPassword !== adminPassword) {
+      enteredPassword = prompt("🔐 Admin Passwort eingeben:");
+      if (enteredPassword === null) {
+        document.body.innerHTML = "<h2>🚫 Zugriff verweigert.</h2>";
+        throw new Error("Abgebrochen");
+      }
+    }
 
-      try {
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
+    fetch(csvUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split("\n").slice(1); // Header entfernen
+        const table = document.getElementById("status-table");
+
+        rows.forEach((row, index) => {
+          const [radnummer, status] = row.split(",");
+          const cleanStatus = status.trim();
+          const cssClass = cleanStatus.includes("Verfügbar")
+            ? "verfuegbar"
+            : cleanStatus.includes("Reparatur")
+            ? "reparatur"
+            : "ausgeliehen";
+
+          const isInRepair = cleanStatus.includes("Reparatur");
+          const tr = document.createElement("tr");
+
+          tr.innerHTML = `
+            <td>${radnummer}</td>
+            <td class="${cssClass}">${cleanStatus}</td>
+            <td><button class="toggle-btn" data-rad="${radnummer}" data-status="${isInRepair ? 'off' : 'on'}">
+              ${isInRepair ? '✅ Reparatur deaktivieren' : '🔧 Reparatur aktivieren'}
+            </button></td>
+          `;
+
+          table.appendChild(tr);
         });
 
-        const text = await res.text();
+        // Event Listener für alle Buttons
+        document.querySelectorAll(".toggle-btn").forEach(button => {
+          button.addEventListener("click", () => {
+            const radnummer = button.dataset.rad;
+            const toggleTo = button.dataset.status === "on" ? "In Reparatur" : "";
 
-        if (text === "OK") {
-          message.textContent = "✅ Status erfolgreich geändert.";
-        } else if (text === "NICHT GEFUNDEN") {
-          message.textContent = "❌ Radnummer nicht gefunden.";
-        } else if (text === "UNAUTHORIZED") {
-          message.textContent = "🔒 Falsches Passwort.";
-        } else {
-          message.textContent = "⚠️ Fehler: " + text;
-        }
-      } catch (err) {
-        console.error(err);
-        message.textContent = "❌ Netzwerkfehler.";
-      }
-    });
+            const payload = {
+              radnummer: radnummer,
+              override: toggleTo,
+              password: adminPassword
+            };
+
+            fetch(scriptEndpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            })
+              .then(res => res.text())
+              .then(text => {
+                if (text === "OK") {
+                  alert("✅ Status aktualisiert");
+                  location.reload();
+                } else if (text === "UNAUTHORIZED") {
+                  alert("🔒 Ungültiges Passwort");
+                } else {
+                  alert("⚠️ Fehler: " + text);
+                }
+              })
+              .catch(err => {
+                alert("❌ Netzwerkfehler");
+                console.error(err);
+              });
+          });
+        });
+      });
   </script>
 </body>
 </html>
