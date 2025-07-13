@@ -104,7 +104,6 @@
     const adminPassword = "Fahrrad1";
 
     let enteredPassword = "";
-
     while (enteredPassword !== adminPassword) {
       enteredPassword = prompt("🔐 Admin Passwort eingeben:");
       if (enteredPassword === null) {
@@ -146,24 +145,25 @@
           button.addEventListener("click", () => {
             const radnummer = button.dataset.rad;
             const override = button.dataset.status === "on" ? "In Reparatur" : "";
-            const url = `${scriptEndpoint}?radnummer=${encodeURIComponent(radnummer)}&override=${encodeURIComponent(override)}&password=${encodeURIComponent(adminPassword)}`;
 
-            fetch(url)
-              .then(res => res.text())
-              .then(text => {
-                if (text === "OK") {
-                  alert("✅ Status aktualisiert");
-                  location.reload();
-                } else if (text === "UNAUTHORIZED") {
-                  alert("🔒 Ungültiges Passwort");
-                } else {
-                  alert("⚠️ Fehler: " + text);
-                }
-              })
-              .catch(err => {
-                alert("❌ Netzwerkfehler");
-                console.error(err);
-              });
+            const callbackName = "cb_" + Math.random().toString(36).substr(2, 8);
+
+            window[callbackName] = function(response) {
+              if (response === "OK") {
+                alert("✅ Status aktualisiert");
+                location.reload();
+              } else if (response === "UNAUTHORIZED") {
+                alert("🔒 Ungültiges Passwort");
+              } else {
+                alert("⚠️ Fehler: " + response);
+              }
+              delete window[callbackName];
+            };
+
+            const url = `${scriptEndpoint}?radnummer=${encodeURIComponent(radnummer)}&override=${encodeURIComponent(override)}&password=${encodeURIComponent(adminPassword)}&callback=${callbackName}`;
+            const script = document.createElement("script");
+            script.src = url;
+            document.body.appendChild(script);
           });
         });
       });
