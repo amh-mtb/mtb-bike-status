@@ -24,7 +24,7 @@
   </style>
 </head>
 <body>
-  <h1>🔧 Admin: Fahrradstatus setzen</h1>
+  <h1>🔧 Fahrradstatus ändern</h1>
   <form id="admin-form">
     <label>Radnummer:
       <input type="text" name="radnummer" required>
@@ -37,6 +37,10 @@
       </select>
     </label>
 
+    <label>🔑 Passwort:
+      <input type="password" name="password" required>
+    </label>
+
     <button type="submit">✅ Anwenden</button>
     <div class="message" id="message"></div>
   </form>
@@ -44,13 +48,11 @@
   <script>
     const form = document.getElementById("admin-form");
     const message = document.getElementById("message");
-    const endpoint = "https://script.google.com/macros/s/AKfycbzw0IDiIBylqAoWrxH2EG3C52pDhCxumJx3eoe2PiKEXmgJ0VPdZ3brdpTMXaMr4FAjyw/exec";
-    const token = "GEHEIM123"; // ⬅️ gleich wie im Script oben
+    const endpoint = "https://script.google.com/macros/s/AKfycbzw0IDiIBylqAoWrxH2EG3C52pDhCxumJx3eoe2PiKEXmgJ0VPdZ3brdpTMXaMr4FAjyw/exec"; // ⬅️ HIER deine URL einsetzen
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(form));
-      data.token = token;
 
       message.textContent = "⏳ Wird gesendet...";
 
@@ -62,16 +64,19 @@
         });
 
         const text = await res.text();
+
         if (text === "OK") {
-          message.textContent = "✅ Erfolgreich aktualisiert";
+          message.textContent = "✅ Status erfolgreich geändert.";
         } else if (text === "NICHT GEFUNDEN") {
-          message.textContent = "❌ Radnummer nicht gefunden";
+          message.textContent = "❌ Radnummer nicht gefunden.";
+        } else if (text === "UNAUTHORIZED") {
+          message.textContent = "🔒 Falsches Passwort.";
         } else {
           message.textContent = "⚠️ Fehler: " + text;
         }
       } catch (err) {
         console.error(err);
-        message.textContent = "❌ Netzwerkfehler";
+        message.textContent = "❌ Netzwerkfehler.";
       }
     });
   </script>
