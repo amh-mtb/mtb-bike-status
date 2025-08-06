@@ -8,9 +8,9 @@
     :root {
       --green: #27ae60;
       --red: #c0392b;
+      --blue: #2980b9;
       --background: #f4f4f4;
       --white: #fff;
-      --blue: #2980b9;
     }
 
     body {
@@ -27,7 +27,6 @@
       color: #333;
       margin-bottom: 2rem;
       font-size: 2rem;
-      text-align: center;
     }
 
     table {
@@ -50,21 +49,6 @@
     th {
       background-color: #fafafa;
       color: #555;
-    }
-
-    .verfuegbar {
-      color: var(--green);
-      font-weight: bold;
-    }
-
-    .ausgeliehen {
-      color: var(--red);
-      font-weight: bold;
-    }
-
-    .reparatur {
-      color: var(--blue);
-      font-weight: bold;
     }
 
     .footer {
@@ -91,16 +75,16 @@
   <table id="status-table">
     <tr>
       <th>Radnummer</th>
-      <th>Status</th>
+      <th>Status (Anzeige)</th>
       <th>Aktion</th>
     </tr>
   </table>
 
-  <div class="footer">Nur für Admins – Reparaturstatus wird direkt gesetzt</div>
+  <div class="footer">Nur für Admins – Status aus Tabelle direkt übernommen</div>
 
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Wgvd19Nb_gMb5i8ItkPQyTiHE7oORn97JHw_-Edwo1mDDcxzx6rauC5_gtwi0rOzZ3YGFjwKJUFG/pub?gid=0&single=true&output=csv";
-    const scriptEndpoint = "https://script.google.com/macros/s/AKfycbyzIjv0yPPQ4uqXwL0EwmYGWQrcS7FB8KDGm7fvI-h6xVJwCeF_EYz3HQDCayfSrc85zg/exec";
+    const scriptEndpoint = "https://script.google.com/macros/s/AKfycbyMfoTc8vUZSX805FsSUWoS5gin9W8ep0BjZKyPbINt_2FraL03jHnvj-Ag9qX5bzv6/exec";
     const adminPassword = "Fahrrad1";
 
     let enteredPassword = "";
@@ -119,23 +103,18 @@
         const table = document.getElementById("status-table");
 
         rows.forEach(row => {
-          const [radnummer, status] = row.split(",");
-          const cleanStatus = status.trim();
-          const cssClass = cleanStatus.includes("Verfügbar")
-            ? "verfuegbar"
-            : cleanStatus.includes("Reparatur")
-            ? "reparatur"
-            : "ausgeliehen";
+          const [radnummer, status, , , , , override] = row.split(",").map(cell => cell.trim());
+          const isInRepair = override === "In Reparatur";
 
-          const isInRepair = cleanStatus.includes("Reparatur");
           const tr = document.createElement("tr");
-
           tr.innerHTML = `
             <td>${radnummer}</td>
-            <td class="${cssClass}">${cleanStatus}</td>
-            <td><button class="toggle-btn" data-rad="${radnummer}" data-status="${isInRepair ? 'off' : 'on'}">
-              ${isInRepair ? '✅ Reparatur deaktivieren' : '🔧 Reparatur aktivieren'}
-            </button></td>
+            <td>${status}</td>
+            <td>
+              <button class="toggle-btn" data-rad="${radnummer}" data-status="${isInRepair ? 'off' : 'on'}">
+                ${isInRepair ? '✅ Reparatur deaktivieren' : '🔧 Reparatur aktivieren'}
+              </button>
+            </td>
           `;
 
           table.appendChild(tr);
