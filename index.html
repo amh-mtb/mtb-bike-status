@@ -74,38 +74,25 @@
     </tr>
   </table>
 
-  <div class="footer">Daten aus Google Sheets + Kalender</div>
+  <div class="footer">Daten aus Google Sheets</div>
 
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Wgvd19Nb_gMb5i8ItkPQyTiHE7oORn97JHw_-Edwo1mDDcxzx6rauC5_gtwi0rOzZ3YGFjwKJUFG/pub?gid=0&single=true&output=csv";
-    // const kalenderUrl = "https://script.google.com/macros/s/AKfycbw1hVp2v9OwrqapodP8k8ZA6m09t2yiCuCCZx93pflmYzLi9KxhVEqqmdVYKDehouvp_Q/exec"; // <- hier deine Script-ID einfügen
 
-    // lade CSV aus Google Sheets
     fetch(csvUrl)
       .then(res => res.text())
       .then(csv => {
-        const rows = csv.trim().split("\n").slice(1);
+        const rows = csv.trim().split("\n").slice(1); // Header entfernen
         const table = document.getElementById("status-table");
 
         rows.forEach(row => {
-          const [radnummer, status, , , , , override, reserviertVon] = row.split(",");
-          const overrideClean = override?.trim();
-          const reserviertClean = reserviertVon?.trim();
-          let statusText = "";
-          let cssClass = "";
+          const [radnummer, statusText] = row.split(",").map(cell => cell.trim());
+          let cssClass = "verfuegbar";
 
-          if (overrideClean === "In Reparatur") {
-            statusText = "🔧 In Reparatur";
+          if (statusText.includes("Reparatur") || statusText.includes("Ausgeliehen")) {
             cssClass = "ausgeliehen";
-          } else if (reserviertClean) {
-            statusText = `📅 Reserviert von ${reserviertClean}`;
+          } else if (statusText.includes("Reserviert")) {
             cssClass = "reserviert";
-          } else if (status.trim().includes("Verfügbar")) {
-            statusText = "✅ Verfügbar";
-            cssClass = "verfuegbar";
-          } else {
-            statusText = "❌ Ausgeliehen";
-            cssClass = "ausgeliehen";
           }
 
           const tr = document.createElement("tr");
@@ -120,7 +107,7 @@
         console.error("❌ Fehler beim Laden der CSV:", err);
         const table = document.getElementById("status-table");
         table.insertAdjacentHTML("afterend", "<p style='color:red;'>Fehler beim Laden der Daten.</p>");
-    });
-</script>
+      });
+  </script>
 </body>
 </html>
