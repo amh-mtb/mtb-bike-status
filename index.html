@@ -31,7 +31,7 @@
 
     table {
       width: 100%;
-      max-width: 500px;
+      max-width: 600px;
       border-collapse: collapse;
       background: var(--white);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -82,7 +82,7 @@
 
     let reservierungen = {};
 
-    // Lade Reservierungen aus Kalender
+    // Lade Reservierungen aus Google Kalender
     fetch(kalenderUrl)
       .then(res => res.json())
       .then(data => {
@@ -90,11 +90,11 @@
       })
       .catch(err => console.warn("⚠️ Fehler beim Laden der Reservierungen:", err))
       .finally(() => {
-        // Lade danach CSV
+        // Danach lade CSV aus Google Sheets
         fetch(csvUrl)
           .then(res => res.text())
           .then(csv => {
-            const rows = csv.trim().split("\n").slice(1);
+            const rows = csv.trim().split("\n").slice(1); // Header entfernen
             const table = document.getElementById("status-table");
 
             rows.forEach(row => {
@@ -115,6 +115,11 @@
               `;
               table.appendChild(tr);
             });
+          })
+          .catch(err => {
+            console.error("❌ Fehler beim Laden der CSV:", err);
+            const table = document.getElementById("status-table");
+            table.insertAdjacentHTML("afterend", "<p style='color:red;'>Fehler beim Laden der Daten.</p>");
           });
       });
   </script>
